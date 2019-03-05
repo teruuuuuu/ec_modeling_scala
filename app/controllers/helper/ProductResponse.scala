@@ -1,6 +1,6 @@
-package helper
+package controllers.helper
 
-import dto.ProductDto
+import core.service.dto.ProductDto
 import play.api.libs.json.{Json, Writes}
 
 trait ProductResponse {

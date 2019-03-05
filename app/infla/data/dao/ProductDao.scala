@@ -1,4 +1,4 @@
-package dao
+package infla.data.dao
 
 //import model.Product
 import play.api.db.slick.HasDatabaseConfigProvider

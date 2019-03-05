@@ -1,6 +1,6 @@
-package domain.product.entity
+package core.domain.product.entity
 
-import util.Identifier
+import core.util.Identifier
 
 case class ProductId(value: Int)
   extends Identifier[Int] {

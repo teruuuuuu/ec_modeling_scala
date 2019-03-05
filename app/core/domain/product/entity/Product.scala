@@ -1,4 +1,4 @@
-package domain.product.entity
+package core.domain.product.entity
 
 case class Product(productId: ProductId, name: String, price: Int, productInfo: ProductInfo){
   def isPersisted = productId.isPersisted

@@ -1,12 +1,12 @@
-package repository
+package core.domain.product.repository
 
-import dao.{ProductDao, ProductInfoDao}
-import domain.product.entity.Product
-import dto.ProductDto
+import core.domain.product.entity.{Product, ProductId, ProductInfo}
+import core.service.dto.ProductDto
+import infla.data.dao.{ProductDao, ProductInfoDao}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ProductRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)(implicit executionContext: ExecutionContext)
@@ -30,6 +30,20 @@ class ProductRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseCo
         } yield ())
       }
     }
+  }
+
+  def find(id: ProductId): Future[Option[Product]] = {
+    db.run(
+      for {
+        p <- Products.filter(_.productId === id.value).result.headOption
+        pi <- ProductInfos.filter(_.productId === id.value).result.headOption
+      } yield (p, pi)
+    ).map(ps => {
+      ps match {
+        case (Some(p), Some(pi)) => Some(Product.apply(ProductId.apply(p._1), p._2, p._3, ProductInfo.apply(pi._2)))
+        case _ => None
+      }
+    })
   }
 
   def findAll =
