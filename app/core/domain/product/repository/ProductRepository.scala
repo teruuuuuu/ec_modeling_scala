@@ -6,7 +6,7 @@ import core.service.dto.ProductDto
 import scala.concurrent.Future
 
 trait ProductRepository {
-  def save(product: Product)
+  def save(product: Product): Future[Product]
   def find(id: ProductId): Future[Option[Product]]
   def findAll: Future[Seq[ProductDto]]
   def findById(id: Int): Future[Option[ProductDto]]

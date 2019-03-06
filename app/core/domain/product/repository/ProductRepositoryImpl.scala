@@ -13,22 +13,23 @@ class ProductRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseCo
   extends ProductRepository with ProductDao with ProductInfoDao {
   import profile.api._
 
-  private def toProductDto(p:(Int, String, Int), i: (Int, String)) = ProductDto(p._1, p._2, p._3, i._2)
+  private def toProductDto(p: (Int, String, Int), i: (Int, String)) = ProductDto(p._1, p._2, p._3, i._2)
 
-  def save(product: Product) = {
-    product.isPersisted match {
-      case false => {
-        db.run(for {
-          p <- insertProduct += (0, product.name, product.price)
-          _ <- ProductInfos += (p._1, product.productInfo.description)
-        } yield ())
-      }
-      case true => {
-        db.run(for {
-          _ <- Products.filter { _.productId === product.productId.value }.map(p => (p.name, p.price)).update((product.name, product.price))
-          _ <- ProductInfos.filter { _.productId === product.productId.value }.map(_.description).update(product.productInfo.description)
-        } yield ())
-      }
+  def save(product: Product): Future[Product] = {
+    if(product.isPersisted) {
+      db.run(for {
+        _ <- Products.filter(_.productId === product.productId.value).update((product.productId.value, product.name, product.price))
+        _ <- ProductInfos.filter(_.productId === product.productId.value).update(product.productId.value, product.productInfo.description)
+      } yield ()).map(x => {
+        product
+      })
+    } else {
+      db.run(for {
+        p <- insertProduct += (0, product.name, product.price)
+        _ <- ProductInfos += (p._1, product.productInfo.description)
+      } yield p._1).map(id => {
+        Product.apply(ProductId.apply(id), product.name, product.price, product.productInfo)
+      })
     }
   }
 
@@ -38,30 +39,26 @@ class ProductRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseCo
         p <- Products.filter(_.productId === id.value).result.headOption
         pi <- ProductInfos.filter(_.productId === id.value).result.headOption
       } yield (p, pi)
-    ).map(ps => {
-      ps match {
-        case (Some(p), Some(pi)) => Some(Product.apply(ProductId.apply(p._1), p._2, p._3, ProductInfo.apply(pi._2)))
-        case _ => None
-      }
-    })
+    ).map {
+      case (Some(p), Some(pi)) => Some(Product.apply(ProductId.apply(p._1), p._2, p._3, ProductInfo.apply(pi._2)))
+      case _ => None
+    }
   }
 
-  def findAll =
+  def findAll: Future[Seq[ProductDto]] =
     db.run(
       Products.join(ProductInfos).on(_.productId === _.productId).result
     ).map(ps => {
-    ps.map(p => toProductDto(p._1, p._2))
-  })
+      ps.map(p => toProductDto(p._1, p._2))
+    })
 
 
-  def findById(id: Int) = {
+  def findById(id: Int): Future[Option[ProductDto]] = {
     db.run(
       Products.join(ProductInfos).on(_.productId === _.productId).filter(_._1.productId === id).result.headOption
-    ).map(p => {
-      p match {
-        case Some(x) => Some(toProductDto(x._1, x._2))
-        case _ => None
-      }
-    })
+    ).map {
+      case Some(x) => Some(toProductDto(x._1, x._2))
+      case _ => None
+    }
   }
 }
