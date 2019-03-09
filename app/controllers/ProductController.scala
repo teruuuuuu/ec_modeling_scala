@@ -1,6 +1,6 @@
 package controllers
 
-import controllers.helper.ProductResponse
+import controllers.response.ProductResponse
 import core.service.ProductService
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json

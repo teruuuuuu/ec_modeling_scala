@@ -1,6 +1,6 @@
 package core.service
 
-import core.service.dto.ProductDto
+import controllers.dto.ProductDto
 
 import scala.concurrent.Future
 

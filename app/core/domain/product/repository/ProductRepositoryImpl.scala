@@ -1,7 +1,7 @@
 package core.domain.product.repository
 
 import core.domain.product.entity.{Product, ProductInfo}
-import core.service.dto.ProductDto
+import controllers.dto.ProductDto
 import infla.data.dao.{ProductDao, ProductInfoDao}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider

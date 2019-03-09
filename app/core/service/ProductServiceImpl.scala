@@ -1,7 +1,7 @@
 package core.service
 
 import core.domain.product.repository.ProductRepository
-import core.service.dto.ProductDto
+import controllers.dto.ProductDto
 import javax.inject.Inject
 import play.api.mvc.ControllerComponents
 

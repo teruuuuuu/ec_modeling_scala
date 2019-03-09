@@ -2,23 +2,27 @@ package infla.filter
 
 import akka.stream.Materializer
 import com.google.inject.Inject
+import infla.session.MySession
 import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class MyFilter @Inject()(cc: ControllerComponents)(implicit val mat: Materializer, executionContext: ExecutionContext)
-  extends AbstractController(cc) with Filter {
+  extends AbstractController(cc) with Filter with MySession{
   val nochecks = List("/login", "/logout")
 
   def apply(nextFilter: RequestHeader => Future[Result])
            (requestHeader: RequestHeader): Future[Result] = {
-    if(!nochecks.find(_.equals(requestHeader.uri)).isDefined && !requestHeader.session.get("is_login").isDefined){
-      Future.successful(Ok("no login").withSession(requestHeader.session + ("abc" -> "def")))
+    implicit val session = requestHeader.session
+
+    if(!nochecks.find(_.equals(requestHeader.uri)).isDefined && !getLoginUserId().isDefined){
+      Future.successful(BadRequest("no login"))
     } else{
       nextFilter(requestHeader).map { result =>
         result
       }
     }
+
   }
 
 }
