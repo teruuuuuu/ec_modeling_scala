@@ -1,11 +1,9 @@
 package controllers
 
-import core.domain.product.repository.ProductRepository
-import core.service.dto.ProductDto
 import controllers.helper.ProductResponse
 import core.service.ProductService
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.json.Json
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Request}
 
 import scala.concurrent.ExecutionContext

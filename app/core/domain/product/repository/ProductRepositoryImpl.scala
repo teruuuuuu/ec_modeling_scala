@@ -1,6 +1,6 @@
 package core.domain.product.repository
 
-import core.domain.product.entity.{Product, ProductId, ProductInfo}
+import core.domain.product.entity.{Product, ProductInfo}
 import core.service.dto.ProductDto
 import infla.data.dao.{ProductDao, ProductInfoDao}
 import javax.inject.{Inject, Singleton}
@@ -18,8 +18,8 @@ class ProductRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseCo
   def save(product: Product): Future[Product] = {
     if(product.isPersisted) {
       db.run(for {
-        _ <- Products.filter(_.productId === product.productId.value).update((product.productId.value, product.name, product.price))
-        _ <- ProductInfos.filter(_.productId === product.productId.value).update(product.productId.value, product.productInfo.description)
+        _ <- Products.filter(_.productId === product.productId.get).update((product.productId.get, product.name, product.price))
+        _ <- ProductInfos.filter(_.productId === product.productId.get).update(product.productId.get, product.productInfo.description)
       } yield ()).map(x => {
         product
       })
@@ -28,19 +28,19 @@ class ProductRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseCo
         p <- insertProduct += (0, product.name, product.price)
         _ <- ProductInfos += (p._1, product.productInfo.description)
       } yield p._1).map(id => {
-        Product.apply(ProductId.apply(id), product.name, product.price, product.productInfo)
+        Product.apply(product.productId, product.name, product.price, product.productInfo)
       })
     }
   }
 
-  def find(id: ProductId): Future[Option[Product]] = {
+  def find(id: Int): Future[Option[Product]] = {
     db.run(
       for {
         p <- Products.filter(_.productId === id.value).result.headOption
         pi <- ProductInfos.filter(_.productId === id.value).result.headOption
       } yield (p, pi)
     ).map {
-      case (Some(p), Some(pi)) => Some(Product.apply(ProductId.apply(p._1), p._2, p._3, ProductInfo.apply(pi._2)))
+      case (Some(p), Some(pi)) => Some(Product.apply(Some(p._1), p._2, p._3, ProductInfo.apply(pi._2)))
       case _ => None
     }
   }
