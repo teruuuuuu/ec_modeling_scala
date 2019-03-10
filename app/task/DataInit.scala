@@ -1,9 +1,9 @@
 package task
 
 import com.google.inject.Inject
-import core.domain.product.entity.Product
+import core.domain.product.model.Product
 import core.domain.product.repository.ProductRepository
-import core.domain.user.entity.{User, UserInfo}
+import core.domain.user.model.{User, UserInfo}
 import core.domain.user.repository.UserRepository
 
 import scala.concurrent.Await

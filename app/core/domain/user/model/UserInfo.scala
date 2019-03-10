@@ -1,4 +1,4 @@
-package core.domain.user.entity
+package core.domain.user.model
 
 case class UserInfo(address: String, postalCode: String) {
 

@@ -5,7 +5,7 @@ import play.api.data.Forms._
 import play.api.mvc.{AnyContent, Request}
 
 
-trait ProductForm {
+trait LoginForm {
   case class LoginForm(name: String, password: String)
 
   implicit val loginForm = Form(

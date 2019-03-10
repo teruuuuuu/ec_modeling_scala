@@ -1,6 +1,6 @@
 package core.domain.product.repository
 
-import core.domain.product.entity.{Product, ProductInfo}
+import core.domain.product.model.{Product, ProductInfo}
 import controllers.dto.ProductDto
 import infla.data.dao.{ProductDao, ProductInfoDao}
 import javax.inject.{Inject, Singleton}
@@ -18,8 +18,8 @@ class ProductRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseCo
   def save(product: Product): Future[Product] = {
     if(product.isPersisted) {
       db.run(for {
-        _ <- Products.filter(_.productId === product.productId.get).update((product.productId.get, product.name, product.price))
-        _ <- ProductInfos.filter(_.productId === product.productId.get).update(product.productId.get, product.productInfo.description)
+        p <- Products.filter(_.productId === product.productId.get).update((product.productId.get, product.name, product.price))
+        pi <- ProductInfos.filter(_.productId === product.productId.get).update(product.productId.get, product.productInfo.description)
       } yield ()).map(x => {
         product
       })
@@ -41,23 +41,6 @@ class ProductRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseCo
       } yield (p, pi)
     ).map {
       case (Some(p), Some(pi)) => Some(Product.apply(Some(p._1), p._2, p._3, ProductInfo.apply(pi._2)))
-      case _ => None
-    }
-  }
-
-  def findAll: Future[Seq[ProductDto]] =
-    db.run(
-      Products.join(ProductInfos).on(_.productId === _.productId).result
-    ).map(ps => {
-      ps.map(p => toProductDto(p._1, p._2))
-    })
-
-
-  def findById(id: Int): Future[Option[ProductDto]] = {
-    db.run(
-      Products.join(ProductInfos).on(_.productId === _.productId).filter(_._1.productId === id).result.headOption
-    ).map {
-      case Some(x) => Some(toProductDto(x._1, x._2))
       case _ => None
     }
   }

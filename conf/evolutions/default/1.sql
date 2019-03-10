@@ -29,8 +29,8 @@ password varchar(256) NOT NULL
 CREATE SEQUENCE order_id_seq START 1;
 CREATE TABLE order_t (
   order_id integer DEFAULT nextval('order_id_seq') PRIMARY KEY,
-order_status integer,
-user_id integer
+  order_status integer,
+  user_id integer
 );
 
 -- used_coupon
@@ -70,23 +70,23 @@ CREATE INDEX product_info_id_index ON product_info(product_id);
 CREATE SEQUENCE item_id_seq START 1;
 CREATE TABLE item (
   item_id integer DEFAULT nextval('item_id_seq') PRIMARY KEY,
-order_id integer,
-product_id integer,
-price integer,
-number integer,
-update_date Timestamp
+  order_id integer,
+  product_id integer,
+  price integer,
+  number integer,
+  update_date Timestamp
 );
 
 -- payment_info
 CREATE SEQUENCE payment_id_seq START 1;
 CREATE TABLE payment_info (
   payment_id integer DEFAULT nextval('payment_id_seq') PRIMARY KEY,
-order_id integer,
-is_payed integer,
-payment_type integer,
-price integer,
-due_date Timestamp,
-payment_date Timestamp
+  order_id integer,
+  is_payed integer,
+  payment_type integer,
+  price integer,
+  due_date Timestamp,
+  payment_date Timestamp
 );
 CREATE INDEX payment_info_order_index ON payment_info(order_id);
 

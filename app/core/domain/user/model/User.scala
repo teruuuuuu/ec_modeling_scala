@@ -1,4 +1,4 @@
-package core.domain.user.entity
+package core.domain.user.model
 
 case class User(userId: Option[Int], name: String, password: String, userInfo: UserInfo) {
   def isPersisted = userId.isDefined

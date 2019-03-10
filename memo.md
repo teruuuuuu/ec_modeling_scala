@@ -5,6 +5,23 @@ curl -i -XPOST -H 'Content-Type:application/json' -d '{"name": "user1", "passwor
 SESSION=`curl -i --cookie cookie -d "_csrf=$TOKEN" -d name=user1 -d password=user1 -L http://localhost:8080/login | grep -E "SESSION\=[^ ]+" -o`
 
 
+check_result() {
+  echo $1
+  SESSION=`echo $1 | grep -E "PLAY_SESSION\=[^ ]+" -o`
+  echo $SESSION
+}
 
-SESSION=`curl -i -XPOST -H 'Content-Type:application/json' -d '{"name": "user1", "password": "password" }' http://localhost:9000/login | grep -E "PLAY_SESSION\=[^ ]+" -o`
-curl -i -XGET -b "$SESSION" http://localhost:9000/product/search
+
+
+# ログイン
+RESULT=`curl -i -XPOST -H 'Content-Type:application/json' -d '{"name": "user1", "password": "password" }' http://localhost:9000/login`
+check_result $RESULT
+
+# 商品検索
+curl -i -XGET -b "$SESSION" http://localhost:9000/product/search?name=product1
+
+# ログアウト
+RESULT=`curl -i -XPOST -b "$SESSION" http://localhost:9000/logout`
+check_result $RESULT
+
+

@@ -9,7 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MyFilter @Inject()(cc: ControllerComponents)(implicit val mat: Materializer, executionContext: ExecutionContext)
   extends AbstractController(cc) with Filter with MySession{
-  val nochecks = List("/login", "/logout")
+  val nochecks = List("/prefright", "/login", "/logout")
 
   def apply(nextFilter: RequestHeader => Future[Result])
            (requestHeader: RequestHeader): Future[Result] = {

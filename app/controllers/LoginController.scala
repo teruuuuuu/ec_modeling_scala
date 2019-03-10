@@ -1,6 +1,6 @@
 package controllers
 
-import controllers.form.ProductForm
+import controllers.form.LoginForm
 import controllers.response.ProductResponse
 import core.domain.user.repository.UserRepository
 import core.service.ProductService
@@ -9,13 +9,19 @@ import javax.inject.{Inject, Singleton}
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Request}
 import play.api.data.Form
 import play.api.data.Forms._
+import play.filters.csrf.{AddCSRFToken, CSRF}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
 class LoginController @Inject()(userRepository: UserRepository, cc: ControllerComponents)(implicit executionContext: ExecutionContext)
-  extends AbstractController(cc) with MySession with ProductForm {
+  extends AbstractController(cc) with MySession with LoginForm {
+
+  @AddCSRFToken
+  def prefright() = Action {implicit request: Request[AnyContent] =>
+    Ok("")
+  }
 
   def login() = Action.async { implicit request: Request[AnyContent] =>
     checkLoginForm match {

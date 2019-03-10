@@ -1,4 +1,4 @@
-package core.domain.product.entity
+package core.domain.product.model
 
 case class Product(productId: Option[Int], name: String, price: Int, productInfo: ProductInfo){
   def isPersisted = productId.isDefined

@@ -1,6 +1,6 @@
 package core.domain.user.repository
 
-import core.domain.user.entity.{User, UserInfo}
+import core.domain.user.model.{User, UserInfo}
 import infla.data.dao.{UserDao, UserInfoDao}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider

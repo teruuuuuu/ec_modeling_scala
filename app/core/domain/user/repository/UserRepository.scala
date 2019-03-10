@@ -1,6 +1,6 @@
 package core.domain.user.repository
 
-import core.domain.user.entity.User
+import core.domain.user.model.User
 
 import scala.concurrent.Future
 
