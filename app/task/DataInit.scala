@@ -1,6 +1,11 @@
 package task
 
+import java.time.LocalDateTime
+
 import com.google.inject.Inject
+import core.domain.order.entity.OrderEntity
+import core.domain.order.model.{Item, Order, OrderStatus}
+import core.domain.order.repository.OrderRepository
 import core.domain.product.model.Product
 import core.domain.product.repository.ProductRepository
 import core.domain.user.model.{User, UserInfo}
@@ -9,7 +14,7 @@ import core.domain.user.repository.UserRepository
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class DataInit @Inject()(userRepository: UserRepository, productRepository: ProductRepository) {
+class DataInit @Inject()(userRepository: UserRepository, productRepository: ProductRepository, orderRepository: OrderRepository) {
   def userDataInit = {
     Await.result(userRepository.save(User.apply(None, "user1", "password", UserInfo.apply("address1", "postal1"))), Duration.Inf)
     Await.result(userRepository.save(User.apply(None, "user2", "password", UserInfo.apply("address2", "postal2"))), Duration.Inf)
@@ -31,8 +36,19 @@ class DataInit @Inject()(userRepository: UserRepository, productRepository: Prod
     Await.result(productRepository.save(Product.apply(None, "product7", 700, "product7 description")), Duration.Inf)
   }
 
+  def orderDataInit = {
+    val user1 = Await.result(userRepository.findByName("user1"), Duration.Inf).get
+    Await.result(orderRepository.save(OrderEntity.apply(Order.apply(Some(5), user1.userId.get, OrderStatus.Shopping),
+      List(Item(None, 1, 1, 1, 1, LocalDateTime.now), Item(None, 1, 2, 2, 2, LocalDateTime.now), Item(None, 1, 3, 3, 3, LocalDateTime.now)),
+      None)), Duration.Inf)
+    Await.result(orderRepository.save(OrderEntity.apply(Order.apply(Some(5), user1.userId.get, OrderStatus.Shopping),
+      List(Item(Some(1), 1, 1, 1, 10, LocalDateTime.now), Item(Some(2), 1, 2, 2, 0, LocalDateTime.now), Item(None, 1, 3, 3, 3, LocalDateTime.now)),
+      None)), Duration.Inf)
+  }
+
   println("init task start")
   userDataInit
   productDataInit
+  orderDataInit
   println("init task end")
 }
