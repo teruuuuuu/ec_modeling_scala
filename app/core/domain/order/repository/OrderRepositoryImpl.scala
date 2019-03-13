@@ -22,8 +22,8 @@ class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConf
     val paymentInfo = orderEntity.paymentInfo
 
     db.run(for {
-      order <- saveOrderQuery(order)
-      item <- saveItem(order._1, items)
+      order <- saveOrderQuery(OrderSchema(order.orderId, order.status.code, order.userId))
+      item <- saveItem(order.orderId.get, items)
     } yield (order, item)).foreach(a => {
       println(a._1)
       println(a._2)
@@ -33,13 +33,13 @@ class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConf
     Future.successful(null)
   }
 
-  private def saveOrderQuery(order: Order) = if(order.orderId.isEmpty) {
-    (Orders returning Orders.map(_.orderId) into ((order, orderId) => (orderId, order._2, order._3))) += (0, order.userId, order.status.code)
+  private def saveOrderQuery(order: OrderSchema) = if(order.orderId.isEmpty) {
+    (Orders returning Orders.map(_.orderId) into ((order, orderId) => order.copy(orderId = Some(orderId)))) += order
   } else {
     for {
-      rowsAffected <- Orders.filter(_.orderId === order.orderId.get).map(a => (a.userId, a.orderStatus)).update(order.userId, order.status.code)
+      rowsAffected <- Orders.filter(_.orderId === order.orderId.get).map(a => (a.userId, a.orderStatus)).update(order.userId, order.orderStatus)
       result <- rowsAffected match {
-        case _ => DBIO.successful(order.orderId.get, order.userId, order.status.code)
+        case _ => DBIO.successful(order)
       }
     } yield result
   }

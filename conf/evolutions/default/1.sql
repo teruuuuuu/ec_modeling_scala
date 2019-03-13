@@ -94,7 +94,7 @@ CREATE INDEX payment_info_order_index ON payment_info(order_id);
 CREATE SEQUENCE credit_pay_id_seq START 1;
 CREATE TABLE credit_pay (
   credit_pay_id integer DEFAULT nextval('credit_pay_id_seq') PRIMARY KEY,
-payment_id integer
+  payment_id integer
 );
 CREATE INDEX credit_pay_payment_id_index ON credit_pay(payment_id);
 
@@ -102,8 +102,8 @@ CREATE INDEX credit_pay_payment_id_index ON credit_pay(payment_id);
 CREATE SEQUENCE bank_pay_id_seq START 1;
 CREATE TABLE bank_pay (
   bank_pay_id integer DEFAULT nextval('bank_pay_id_seq') PRIMARY KEY,
-payment_id integer,
-bank_account varchar(32)
+  payment_id integer,
+  bank_account varchar(32)
 );
 CREATE INDEX bank_pay_payment_id_index ON bank_pay(payment_id);
 

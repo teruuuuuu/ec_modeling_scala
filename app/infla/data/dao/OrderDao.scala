@@ -11,11 +11,14 @@ trait OrderDao extends HasDatabaseConfigProvider[JdbcProfile] {
   import profile.api._
   lazy val Orders = TableQuery[OrderTable]
 
-  protected class OrderTable(tag: Tag) extends Table[(Int, Int, Int)](tag, "ORDER_T") {
+  case class OrderSchema(orderId: Option[Int], orderStatus: Int, userId: Int)
+
+  protected class OrderTable(tag: Tag) extends Table[OrderSchema](tag, "ORDER_T") {
     def orderId = column[Int]("ORDER_ID", O.PrimaryKey, O.AutoInc)
     def orderStatus = column[Int]("ORDER_STATUS")
     def userId = column[Int]("USER_ID")
-    def * = (orderId, orderStatus, userId)
+//    def * = (orderId, orderStatus, userId)
+def * = (orderId.?, orderStatus, userId) <> (OrderSchema.tupled, OrderSchema.unapply)
   }
 
 }
