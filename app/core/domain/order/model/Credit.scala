@@ -1,3 +1,3 @@
 package core.domain.order.model
 
-case class Credit() extends PayDetail {}
+case class Credit(creditId: Option[Int]) extends PayDetail {}

@@ -1,7 +1,6 @@
 package infla.data.dao
 
 import java.sql.Timestamp
-import java.time.LocalDateTime
 
 import play.api.db.slick.HasDatabaseConfigProvider
 import slick.jdbc.JdbcProfile
@@ -13,7 +12,7 @@ trait PaymentInfoDao extends HasDatabaseConfigProvider[JdbcProfile] {
   case class PaymentInfoSchema(paymentId: Option[Int], orderId: Int, isPayed: Int, paymentType: Int, price: Int,
                                dueDate: Timestamp, paymentDate: Option[Timestamp])
 
-  protected class PaymentInfoTable(tag: Tag) extends Table[PaymentInfoSchema](tag, "ORDER_T") {
+  protected class PaymentInfoTable(tag: Tag) extends Table[PaymentInfoSchema](tag, "PAYMENT_INFO") {
     def paymentId = column[Int]("PAYMENT_ID", O.PrimaryKey, O.AutoInc)
     def orderId = column[Int]("ORDER_ID")
     def isPayed = column[Int]("IS_PAYED")

@@ -1,5 +1,3 @@
 package core.domain.order.model
 
-case class BankPay(bankAcount: String) extends PayDetail {
-
-}
+case class BankPay(bankPayId: Option[Int], bankAcount: String) extends PayDetail {}

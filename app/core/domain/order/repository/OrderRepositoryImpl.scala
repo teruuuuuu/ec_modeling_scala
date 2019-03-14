@@ -3,8 +3,7 @@ package core.domain.order.repository
 import java.sql.Timestamp
 
 import core.domain.order.entity.OrderEntity
-import core.domain.order.model.{Item, Order}
-import core.domain.product.repository.ProductRepository
+import core.domain.order.model._
 import infla.data.dao._
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider
@@ -13,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)(implicit executionContext: ExecutionContext)
-  extends OrderRepository with OrderDao with ItemDao with PaymentInfoDao {
+  extends OrderRepository with OrderDao with ItemDao with PaymentInfoDao with BankPayDao with CreditPayDao {
   import profile.api._
 
   override def save(orderEntity: OrderEntity): Future[OrderEntity] = {
@@ -24,13 +23,23 @@ class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConf
     db.run(for {
       order <- saveOrderQuery(OrderSchema(order.orderId, order.status.code, order.userId))
       item <- saveItem(order.orderId.get, items)
-    } yield (order, item)).foreach(a => {
-      println(a._1)
-      println(a._2)
+      payment <- savePaymentInfo(order.orderId.get, paymentInfo)
+    } yield (order, item, payment)).map(a => {
+      val order = a._1
+      val items = a._2
+      val paymentInfo = a._3
+
+      val o = Order(order.orderId, order.userId, OrderStatus(order.orderStatus))
+      val i = items.map(k => Item(k.itemId, k.orderId, k.productId, k.price, k.number, k.updateDate.toLocalDateTime))
+      val p = paymentInfo._1.map(p => {
+        if(p.paymentType == PaymentType.Bank.code) {
+          PaymentInfo(p.paymentId, PaymentType(p.paymentType), p.isPayed, p.price, p.dueDate.toLocalDateTime, p.paymentDate.map(_.toLocalDateTime), paymentInfo._2.map(b => BankPay(b.bankPayId, b.bankAccount)).get)
+        } else {
+          PaymentInfo(p.paymentId, PaymentType(p.paymentType), p.isPayed, p.price, p.dueDate.toLocalDateTime, p.paymentDate.map(_.toLocalDateTime), paymentInfo._3.map(c => Credit(c.creditPayId)).get)
+        }
+      })
+      OrderEntity(o, i, p)
     })
-
-
-    Future.successful(null)
   }
 
   private def saveOrderQuery(order: OrderSchema) = if(order.orderId.isEmpty) {
@@ -69,5 +78,75 @@ class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConf
         deleteQuery(i)
       }
     }))
+  }
+
+  private def savePaymentInfo(orderId: Int, paymentInfo: Option[PaymentInfo]) = {
+    def syncPamentInfo = (orderId: Int, paymentInfo: Option[PaymentInfoSchema]) => {
+      paymentInfo match {
+        case None => DBIO.successful(None)
+        case Some(p) if p.paymentId.isEmpty =>
+          (PaymentInfos returning PaymentInfos.map(_.paymentId)) into ((paymentInfo, paymentId) => Some(paymentInfo.copy(paymentId = Some(paymentId)))) += p
+        case Some(p) if p.paymentId.isDefined => {
+          for {
+            rowsAffected <- PaymentInfos.filter(_.paymentId === p.paymentId).
+              map(r => (r.orderId, r.isPayed, r.paymentType, r.price, r.dueDate, r.paymentDate)).
+              update(orderId, p.isPayed, p.paymentType, p.price, p.dueDate, p.paymentDate)
+            result <- rowsAffected match { case _ => DBIO.successful(Some(p))}
+          } yield result
+        }
+      }
+    }
+
+    def syncBankPay = (orderId: Int, paymentInfo: Option[PaymentInfoSchema], bankPay: Option[PayDetail]) => {
+      if(paymentInfo.isEmpty || bankPay.isEmpty || !bankPay.get.isInstanceOf[BankPay]) {
+        DBIO.successful(None)
+      } else {
+        bankPay.get match {
+          case x: BankPay if x.bankPayId.isEmpty => {
+            val record = BankPaySchema(x.bankPayId, paymentInfo.get.paymentId.get, x.bankAcount)
+            (BankPays returning BankPays.map(_.bankPayId)) into ((bankPay, bankPayId) => Some(bankPay.copy(bankPayId = Some(bankPayId)))) += record
+          }
+          case x: BankPay if x.bankPayId.isDefined => {
+            val record = BankPaySchema(x.bankPayId, paymentInfo.get.paymentId.get, x.bankAcount)
+            for {
+              rowsAffected <- BankPays.filter(_.bankPayId === record.bankPayId.get).
+                map(r => (r.paymentId, r.bankAccount)).
+                update(record.paymentId, record.bankAccount)
+              result <- rowsAffected match { case _ => DBIO.successful(Some(record))}
+            } yield result
+          }
+          case _ =>  DBIO.successful(None)
+        }
+      }
+    }
+
+    def syncCreditPay = (orderId: Int, paymentInfo: Option[PaymentInfoSchema], bankPay: Option[PayDetail]) => {
+      if(paymentInfo.isEmpty || bankPay.isEmpty || !bankPay.get.isInstanceOf[BankPay]) {
+        DBIO.successful(None)
+      } else {
+        bankPay.get match {
+          case x: Credit if x.creditId.isEmpty => {
+            val record = CreditPaySchema(x.creditId, paymentInfo.get.paymentId.get)
+            (CreditPays returning CreditPays.map(_.creditPayId)) into ((creditPay, creditPayId) => Some(creditPay.copy(creditPayId = Some(creditPayId)))) += record
+          }
+          case x: Credit if x.creditId.isDefined => {
+            val record = CreditPaySchema(x.creditId, paymentInfo.get.paymentId.get)
+            for {
+              rowsAffected <- CreditPays.filter(_.creditPayId === record.creditPayId.get).
+                map(r => (r.paymentId)).
+                update(record.paymentId)
+              result <- rowsAffected match { case _ => DBIO.successful(Some(record))}
+            } yield result
+          }
+          case _ =>  DBIO.successful(None)
+        }
+      }
+    }
+
+    for {
+      order <- syncPamentInfo(orderId, paymentInfo.map(p=> PaymentInfoSchema(None, orderId, p.isPayed, p.paymentType.code, p.price, Timestamp.valueOf(p.dueDate), p.paymentDate.map(Timestamp.valueOf(_)))))
+      bank <- syncBankPay(orderId, order, paymentInfo.map(_.payDetail))
+      credit <- syncCreditPay(orderId, order, paymentInfo.map(_.payDetail))
+    } yield (order, bank, credit)
   }
 }

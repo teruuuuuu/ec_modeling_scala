@@ -1,13 +1,11 @@
 package infla.data.dao
 
-import java.sql.Timestamp
-
 import play.api.db.slick.HasDatabaseConfigProvider
 import slick.jdbc.JdbcProfile
 
 trait CreditPayDao extends HasDatabaseConfigProvider[JdbcProfile] {
   import profile.api._
-  lazy val Items = TableQuery[CreditPayTable]
+  lazy val CreditPays = TableQuery[CreditPayTable]
 
   case class CreditPaySchema(creditPayId: Option[Int], paymentId: Int)
 

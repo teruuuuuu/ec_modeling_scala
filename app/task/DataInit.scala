@@ -4,7 +4,7 @@ import java.time.LocalDateTime
 
 import com.google.inject.Inject
 import core.domain.order.entity.OrderEntity
-import core.domain.order.model.{Item, Order, OrderStatus}
+import core.domain.order.model._
 import core.domain.order.repository.OrderRepository
 import core.domain.product.model.Product
 import core.domain.product.repository.ProductRepository
@@ -38,9 +38,9 @@ class DataInit @Inject()(userRepository: UserRepository, productRepository: Prod
 
   def orderDataInit = {
     val user1 = Await.result(userRepository.findByName("user1"), Duration.Inf).get
-    Await.result(orderRepository.save(OrderEntity.apply(Order.apply(Some(5), user1.userId.get, OrderStatus.Shopping),
+    val result1 = Await.result(orderRepository.save(OrderEntity.apply(Order.apply(Some(5), user1.userId.get, OrderStatus.Shopping),
       List(Item(None, 1, 1, 1, 1, LocalDateTime.now), Item(None, 1, 2, 2, 2, LocalDateTime.now), Item(None, 1, 3, 3, 3, LocalDateTime.now)),
-      None)), Duration.Inf)
+      Some(PaymentInfo(None, PaymentType.Bank, 0, 3000, LocalDateTime.now, None, BankPay(None, "aaa"))))), Duration.Inf)
     Await.result(orderRepository.save(OrderEntity.apply(Order.apply(Some(5), user1.userId.get, OrderStatus.Shopping),
       List(Item(Some(1), 1, 1, 1, 10, LocalDateTime.now), Item(Some(2), 1, 2, 2, 0, LocalDateTime.now), Item(None, 1, 3, 3, 3, LocalDateTime.now)),
       None)), Duration.Inf)
