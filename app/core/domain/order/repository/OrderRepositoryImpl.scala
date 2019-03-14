@@ -32,11 +32,13 @@ class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConf
       val o = Order(order.orderId, order.userId, OrderStatus(order.orderStatus))
       val i = items.map(k => Item(k.itemId, k.orderId, k.productId, k.price, k.number, k.updateDate.toLocalDateTime))
       val p = paymentInfo._1.map(p => {
-        if(p.paymentType == PaymentType.Bank.code) {
-          PaymentInfo(p.paymentId, PaymentType(p.paymentType), p.isPayed, p.price, p.dueDate.toLocalDateTime, p.paymentDate.map(_.toLocalDateTime), paymentInfo._2.map(b => BankPay(b.bankPayId, b.bankAccount)).get)
-        } else {
-          PaymentInfo(p.paymentId, PaymentType(p.paymentType), p.isPayed, p.price, p.dueDate.toLocalDateTime, p.paymentDate.map(_.toLocalDateTime), paymentInfo._3.map(c => Credit(c.creditPayId)).get)
-        }
+        PaymentInfo(
+          p.paymentId, PaymentType(p.paymentType), p.isPayed, p.price, p.dueDate.toLocalDateTime, p.paymentDate.map(_.toLocalDateTime),
+          if(p.paymentType == PaymentType.Bank.code) {
+            paymentInfo._2.map(b => BankPay(b.bankPayId, b.bankAccount)).get
+          } else {
+            paymentInfo._3.map(c => Credit(c.creditPayId)).get
+          })
       })
       OrderEntity(o, i, p)
     })
