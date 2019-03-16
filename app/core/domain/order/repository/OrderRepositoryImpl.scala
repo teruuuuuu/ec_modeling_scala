@@ -15,33 +15,52 @@ class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConf
   extends OrderRepository with OrderDao with ItemDao with PaymentInfoDao with BankPayDao with CreditPayDao {
   import profile.api._
 
+  override def userCart(userId: Int): Future[OrderEntity] = {
+    db.run(for{
+      order <- Orders.filter(o => o.userId === userId && o.orderStatus === OrderStatus.Shopping.code).result.headOption
+      items <- Items.filter(_.orderId === order.map(_.orderId.get).getOrElse(-1)).result
+      paymentInfo <- PaymentInfos.filter(_.orderId === order.map(_.orderId.get).getOrElse(-1)).result.headOption
+      bank <- BankPays.filter(_.paymentId === paymentInfo.map(_.paymentId.get).getOrElse(-1)).result.headOption
+      credit <- CreditPays.filter(_.paymentId === paymentInfo.map(_.paymentId.get).getOrElse(-1)).result.headOption
+    } yield (order, items, paymentInfo, bank, credit)).map{ case (order, items, paymentInfo, bank, credit) => {
+        order match {
+          case None => OrderEntity(Order(None, userId, OrderStatus.Shopping), List(), None)
+          case Some(x) => recordToEntity(order.get, items, paymentInfo, bank, credit)
+        }
+      }
+    }
+  }
+
   override def save(orderEntity: OrderEntity): Future[OrderEntity] = {
     val order = orderEntity.order
     val items = orderEntity.items
     val paymentInfo = orderEntity.paymentInfo
 
-    db.run(for {
+    val query = for {
       order <- saveOrderQuery(OrderSchema(order.orderId, order.status.code, order.userId))
       item <- saveItem(order.orderId.get, items)
       payment <- savePaymentInfo(order.orderId.get, paymentInfo)
-    } yield (order, item, payment)).map(a => {
-      val order = a._1
-      val items = a._2
-      val paymentInfo = a._3
+    } yield (order, item, payment)
 
-      val o = Order(order.orderId, order.userId, OrderStatus(order.orderStatus))
-      val i = items.map(k => Item(k.itemId, k.orderId, k.productId, k.price, k.number, k.updateDate.toLocalDateTime))
-      val p = paymentInfo._1.map(p => {
-        PaymentInfo(
-          p.paymentId, PaymentType(p.paymentType), p.isPayed, p.price, p.dueDate.toLocalDateTime, p.paymentDate.map(_.toLocalDateTime),
-          if(p.paymentType == PaymentType.Bank.code) {
-            paymentInfo._2.map(b => BankPay(b.bankPayId, b.bankAccount)).get
-          } else {
-            paymentInfo._3.map(c => Credit(c.creditPayId)).get
-          })
-      })
-      OrderEntity(o, i, p)
+    db.run(query transactionally).map(a => {
+      recordToEntity(a._1, a._2, a._3._1, a._3._2, a._3._3)
     })
+  }
+
+  private def recordToEntity(order: OrderSchema, items: Seq[ItemSchema], paymentInfo: Option[PaymentInfoSchema],
+                             bankPay: Option[BankPaySchema], creditPays: Option[CreditPaySchema]): OrderEntity = {
+    val o = Order(order.orderId, order.userId, OrderStatus(order.orderStatus))
+    val i = items.map(k => Item(k.itemId, k.orderId, k.productId, k.price, k.number, k.updateDate.toLocalDateTime))
+    val p = paymentInfo.map(p => {
+      PaymentInfo(
+        p.paymentId, PaymentType(p.paymentType), p.isPayed, p.price, p.dueDate.toLocalDateTime, p.paymentDate.map(_.toLocalDateTime),
+        if(p.paymentType == PaymentType.Bank.code) {
+          bankPay.map(b => BankPay(b.bankPayId, b.bankAccount)).get
+        } else {
+          creditPays.map(c => Credit(c.creditPayId)).get
+        })
+    })
+    OrderEntity(o, i.toList, p)
   }
 
   private def saveOrderQuery(order: OrderSchema) = if(order.orderId.isEmpty) {
@@ -135,8 +154,7 @@ class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConf
             val record = CreditPaySchema(x.creditId, paymentInfo.get.paymentId.get)
             for {
               rowsAffected <- CreditPays.filter(_.creditPayId === record.creditPayId.get).
-                map(r => (r.paymentId)).
-                update(record.paymentId)
+                map(_.paymentId).update(record.paymentId)
               result <- rowsAffected match { case _ => DBIO.successful(Some(record))}
             } yield result
           }
