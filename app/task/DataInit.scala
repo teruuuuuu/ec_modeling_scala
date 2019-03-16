@@ -1,20 +1,16 @@
 package task
 
-import java.time.LocalDateTime
-
 import com.google.inject.Inject
-import core.domain.order.entity.OrderEntity
-import core.domain.order.model._
 import core.domain.order.repository.OrderRepository
 import core.domain.product.model.Product
 import core.domain.product.repository.ProductRepository
 import core.domain.user.model.{User, UserInfo}
 import core.domain.user.repository.UserRepository
 
-import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext}
 
-class DataInit @Inject()(userRepository: UserRepository, productRepository: ProductRepository, orderRepository: OrderRepository) {
+class DataInit @Inject()(userRepository: UserRepository, productRepository: ProductRepository, orderRepository: OrderRepository)(implicit ec: ExecutionContext) {
   def userDataInit = {
     Await.result(userRepository.save(User.apply(None, "user1", "password", UserInfo.apply("address1", "postal1"))), Duration.Inf)
     Await.result(userRepository.save(User.apply(None, "user2", "password", UserInfo.apply("address2", "postal2"))), Duration.Inf)
@@ -38,19 +34,21 @@ class DataInit @Inject()(userRepository: UserRepository, productRepository: Prod
 
   def orderDataInit = {
     val user1 = Await.result(userRepository.findByName("user1"), Duration.Inf).get
-    
+    val user2 = Await.result(userRepository.findByName("user2"), Duration.Inf).get
+    val product1 = Await.result(productRepository.findByName("product1"), Duration.Inf).headOption.get
+    val product2 = Await.result(productRepository.findByName("product2"), Duration.Inf).headOption.get
+    val product3 = Await.result(productRepository.findByName("product3"), Duration.Inf).headOption.get
+    val product4 = Await.result(productRepository.findByName("product4"), Duration.Inf).headOption.get
+    val product5 = Await.result(productRepository.findByName("product5"), Duration.Inf).headOption.get
 
-    val user1Cart = Await.result(orderRepository.userCart(user1.userId.get), Duration.Inf)
-
-    Await.result(orderRepository.save(user1Cart), Duration.Inf)
-    Await.result(orderRepository.save(user1Cart), Duration.Inf)
-
-//    val result1 = Await.result(orderRepository.save(OrderEntity.apply(Order.apply(Some(5), user1.userId.get, OrderStatus.Shopping),
-//      List(Item(None, 1, 1, 1, 1, LocalDateTime.now), Item(None, 1, 2, 2, 2, LocalDateTime.now), Item(None, 1, 3, 3, 3, LocalDateTime.now)),
-//      Some(PaymentInfo(None, PaymentType.Bank, 0, 3000, LocalDateTime.now, None, BankPay(None, "aaa"))))), Duration.Inf)
-//    Await.result(orderRepository.save(OrderEntity.apply(Order.apply(Some(5), user1.userId.get, OrderStatus.Shopping),
-//      List(Item(Some(1), 1, 1, 1, 10, LocalDateTime.now), Item(Some(2), 1, 2, 2, 0, LocalDateTime.now), Item(None, 1, 3, 3, 3, LocalDateTime.now)),
-//      None)), Duration.Inf)
+    orderRepository.userCart(user1.userId.get).map{cart => {
+      List((product1, 2), (product2, 3), (product1, 1), (product1, 5)).foldLeft(cart)((cart, cur) => {
+        cart.updateItem(cur._1, cur._2)
+      }).bankPay("12345") match {
+        case Right(x) => orderRepository.save(x)
+        case _ => println("update fail")
+      }
+    }}
   }
 
   println("init task start")

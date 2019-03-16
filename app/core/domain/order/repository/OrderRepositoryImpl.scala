@@ -50,7 +50,7 @@ class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConf
   private def recordToEntity(order: OrderSchema, items: Seq[ItemSchema], paymentInfo: Option[PaymentInfoSchema],
                              bankPay: Option[BankPaySchema], creditPays: Option[CreditPaySchema]): OrderEntity = {
     val o = Order(order.orderId, order.userId, OrderStatus(order.orderStatus))
-    val i = items.map(k => Item(k.itemId, k.orderId, k.productId, k.price, k.number, k.updateDate.toLocalDateTime))
+    val i = items.map(k => Item(k.itemId, k.productId, k.price, k.number, k.updateDate.toLocalDateTime))
     val p = paymentInfo.map(p => {
       PaymentInfo(
         p.paymentId, PaymentType(p.paymentType), p.isPayed, p.price, p.dueDate.toLocalDateTime, p.paymentDate.map(_.toLocalDateTime),

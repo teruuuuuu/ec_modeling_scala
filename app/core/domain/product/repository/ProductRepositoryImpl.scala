@@ -28,7 +28,7 @@ class ProductRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseCo
         p <- insertProduct += (0, product.name, product.price)
         _ <- ProductInfos += (p._1, product.productInfo.description)
       } yield p._1).map(id => {
-        Product.apply(product.productId, product.name, product.price, product.productInfo)
+        Product(product.productId, product.name, product.price, product.productInfo)
       })
     }
   }
@@ -40,8 +40,14 @@ class ProductRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseCo
         pi <- ProductInfos.filter(_.productId === id.value).result.headOption
       } yield (p, pi)
     ).map {
-      case (Some(p), Some(pi)) => Some(Product.apply(Some(p._1), p._2, p._3, ProductInfo.apply(pi._2)))
+      case (Some(p), Some(pi)) => Some(Product(Some(p._1), p._2, p._3, ProductInfo.apply(pi._2)))
       case _ => None
     }
+  }
+
+  def findByName(name: String): Future[Seq[Product]] = {
+    db.run(
+      Products.filter(_.name like ('%'+name+'%')).join(ProductInfos).on(_.productId === _.productId).result
+    ).map(_.map{case (p, pi) => Product(Some(p._1), p._2, p._3, ProductInfo.apply(pi._2))})
   }
 }
