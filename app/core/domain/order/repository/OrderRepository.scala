@@ -6,5 +6,5 @@ import scala.concurrent.Future
 
 trait OrderRepository {
   def userCart(userId: Int): Future[OrderEntity]
-  def save(orderEntity: OrderEntity): Future[OrderEntity]
+  def save(orderEntity: OrderEntity): Future[Either[Int, OrderEntity]]
 }

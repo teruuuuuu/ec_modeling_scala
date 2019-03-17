@@ -25,6 +25,16 @@ class UserRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConfi
     }
   }
 
+  def findById(userId: Int): Future[Option[User]] = {
+    val query = (for{
+      u <- Users.filter(_.userId === userId).join(UserInfos).on(_.userId === _.userId).result.headOption
+    } yield u).map{
+      case Some((u, ui)) => Some(User.apply(Some(u._1), u._2, u._3, UserInfo.apply(ui._2, ui._3)))
+      case _ => None
+    }
+    db.run(query)
+  }
+
   override def save(user: User): Future[User] = {
     if (user.isPersisted) {
       db.run(for {

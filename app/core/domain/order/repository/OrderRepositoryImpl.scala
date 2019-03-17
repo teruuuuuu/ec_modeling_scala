@@ -31,7 +31,7 @@ class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConf
     }
   }
 
-  override def save(orderEntity: OrderEntity): Future[OrderEntity] = {
+  override def save(orderEntity: OrderEntity): Future[Either[Int, OrderEntity]] = {
     val order = orderEntity.order
     val items = orderEntity.items
     val paymentInfo = orderEntity.paymentInfo
@@ -43,7 +43,7 @@ class OrderRepositoryImpl @Inject()(protected val dbConfigProvider: DatabaseConf
     } yield (order, item, payment)
 
     db.run(query transactionally).map(a => {
-      recordToEntity(a._1, a._2, a._3._1, a._3._2, a._3._3)
+      Right(recordToEntity(a._1, a._2, a._3._1, a._3._2, a._3._3))
     })
   }
 

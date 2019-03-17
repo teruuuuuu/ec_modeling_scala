@@ -17,13 +17,4 @@ class ProductController @Inject()(productService: ProductService, cc: Controller
   def searchByName(name: Option[String]) = Action.async { implicit request: Request[AnyContent] =>
     productService.findProductByName(name.getOrElse("")).map(p => Ok(Json.toJson(p)))
   }
-
-  //  def searchById(id: Int) = Action.async { implicit request: Request[AnyContent] =>
-  //    productService.findProductById(id).map(p =>
-  //      p match {
-  //        case Some(x) => Ok(Json.toJson(x))
-  //        case _ => Ok("")
-  //      }
-  //    )
-  //  }
 }

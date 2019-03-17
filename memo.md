@@ -20,6 +20,14 @@ check_result $RESULT
 # 商品検索
 curl -i -XGET -b "$SESSION" http://localhost:9000/product/search?name=product1
 
+# 商品追加
+RESULT=`curl -i -XPOST -b "$SESSION" -H 'Content-Type:application/json' -d '{"product_id": 1, "number": 3 }' http://localhost:9000/order/updateItem`
+check_result $RESULT
+
+# 購入確定
+RESULT=`curl -i -XPOST -b "$SESSION" -H 'Content-Type:application/json' -d '{"bank_account": "123-4567" }' http://localhost:9000/order/bankConfirm`
+check_result $RESULT
+
 # ログアウト
 RESULT=`curl -i -XPOST -b "$SESSION" http://localhost:9000/logout`
 check_result $RESULT

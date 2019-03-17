@@ -10,4 +10,7 @@ GET     /prefright                         controllers.LoginController.prefright
 POST    /login                             controllers.LoginController.login
 POST    /logout                            controllers.LoginController.logout
 GET     /product/search                    controllers.ProductController.searchByName(name: Option[String])
+POST    /order/updateItem                  controllers.OrderController.updateItem
+POST    /order/bankConfirm                 controllers.OrderController.bankConfirm
+POST    /order/creditConfirm               controllers.OrderController.creditConfirm
 # GET     /product/searchById/:id            controllers.ProductController.searchById(id: Int)
